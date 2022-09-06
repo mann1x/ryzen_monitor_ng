@@ -2137,7 +2137,7 @@ void pm_table_0x1E0004(pm_table *pmt, void* base_addr) {
     pmt->max_l3 = 1; //Number of L3 caches supported by this PM table version
     pmt->zen_version = 1; //Zen2
     pmt->experimental = 0; //Print experimental note
-    pmt->powersum_unclear = 1; //No idea how to calculatec the total power
+    pmt->powersum_unclear = 0; //No idea how to calculatec the total power
     pmt->has_graphics = 1; //Print GFX information
 
     pmt->STAPM_LIMIT                = pm_element(0);
@@ -2157,7 +2157,8 @@ void pm_table_0x1E0004(pm_table *pmt, void* base_addr) {
     pmt->EDC_LIMIT_SOC              = pm_element(13);
     //pmt->EDC_VALUE_SOC              = pm_element(15);
     pmt->THM_LIMIT                  = pm_element(20); //Core
-    pmt->THM_VALUE                  = pm_element(21); //Core
+    assign_pm_elements_4(pmt->THM_VALUE_CORES,  21,  23,  25,  27);
+    //pmt->THM_VALUE                  = pm_element(17); //Core
     pmt->THM_LIMIT_GFX              = pm_element(30);
     pmt->THM_VALUE_GFX              = pm_element(31);
     pmt->THM_LIMIT_SOC              = pm_element(32);
@@ -2412,7 +2413,7 @@ void pm_table_0x1E0004(pm_table *pmt, void* base_addr) {
     //pmt->DGPU_FREQ_TARGET           = pm_element(370);
     pmt->PEAK_TEMP                  = pm_element(370);
     pmt->SKIN_TEMP_MARGIN           = pm_element(371);
-    pmt->PC6                        = pm_element(372);
+    //pmt->PC6                        = pm_element(372);
     pmt->PWM                        = pm_element(373);
     pmt->CSTATE_BOOST               = pm_element(374);
     pmt->PROCHOT                    = pm_element(375);

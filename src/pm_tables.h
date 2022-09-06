@@ -52,6 +52,7 @@ typedef struct {
     float *TDC_VALUE_SOC;
     float *THM_LIMIT;
     float *THM_VALUE;
+    float *THM_VALUE_CORES[PMT_MAX_NUM_CORES];
     float *THM_LIMIT_SOC;
     float *THM_VALUE_SOC;
     float *THM_LIMIT_GFX;

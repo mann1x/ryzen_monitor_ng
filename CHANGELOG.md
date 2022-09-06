@@ -1,3 +1,5 @@
+# Version 2.0.1
+- Fixes for Picasso PM table 0x1E0004
 # Version 2.0.0
 - Added support for Cezanne disabled cores fuse (thx @PJVol)
 - Added support to show Curve Optimizer counts

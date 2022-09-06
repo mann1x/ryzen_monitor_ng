@@ -51,7 +51,7 @@
 #include "commonfuncs.h"
 #include "argparse.h"
 
-#define PROGRAM_VERSION "2.0.0"
+#define PROGRAM_VERSION "2.0.1"
 #define BUF_SIZE 65536
 #define getName(var) #var
 
@@ -90,6 +90,8 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
     float core_voltage, core_frequency, package_sleep_time, core_sleep_time, average_voltage;
     float peak_core_frequency, peak_core_temp, peak_core_voltage, smu_peak_core_voltage;
     float total_core_voltage, total_core_power, total_usage, total_core_CC6;
+    float thm_value = 0;
+
     int core_disabled, core_number;
     //constraints block
     float edc_value, ppt_limit_apu;
@@ -143,6 +145,11 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
     for (i = 0; i < pmt->max_cores; i++) {
         core_disabled = (sysinfo->core_disable_map >> i)&0x01;
         core_frequency = pmta(CORE_FREQEFF[i]) * 1000.f;
+
+        if (!pmt->THM_VALUE) {
+            if (pmta0(THM_VALUE_CORES[i]) > 0 && pmta0(THM_VALUE_CORES[i]) > thm_value)
+                thm_value = pmta0(THM_VALUE_CORES[i]);
+        }
 
         core_voltage = pmta(CORE_VOLTAGE[i]); // True core voltage
         // Rumours say this is how AMD calculates core voltage
@@ -261,7 +268,8 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
         if(pmt->TDC_VALUE_SOC) print_line("TDC Value, SoC only", "%7.3f A | %7.f A | %8.2f %%", pmta(TDC_VALUE_SOC), pmta(TDC_LIMIT_SOC), (pmta(TDC_VALUE_SOC) / pmta(TDC_LIMIT_SOC) * 100));
         print_line("EDC", "%7.3f A | %7.f A | %8.2f %%", edc_value, pmta0(EDC_LIMIT), (edc_value / pmta0(EDC_LIMIT) * 100));
         if(pmt->EDC_VALUE_SOC) print_line("EDC, SoC only", "%7.3f A | %7.f A | %8.2f %%", pmta(EDC_VALUE_SOC), pmta(EDC_LIMIT_SOC), (pmta(EDC_VALUE_SOC) / pmta(EDC_LIMIT_SOC) * 100));
-        print_line("THM", "%7.2f C | %7.f C | %8.2f %%", pmta(THM_VALUE), pmta(THM_LIMIT), (pmta(THM_VALUE) / pmta(THM_LIMIT) * 100));
+        if (pmt->THM_VALUE) thm_value = pmta(THM_VALUE);
+        print_line("THM", "%7.2f C | %7.f C | %8.2f %%", thm_value, pmta(THM_LIMIT), (thm_value / pmta(THM_LIMIT) * 100));
         if (!view_compact) {
             if(pmt->THM_VALUE_SOC) print_line("THM SoC", "%7.2f C | %7.f C | %8.2f %%", pmta(THM_VALUE_SOC), pmta(THM_LIMIT_SOC), (pmta(THM_VALUE_SOC) / pmta(THM_LIMIT_SOC) * 100));
             if(pmt->THM_VALUE_GFX) print_line("THM GFX", "%7.2f C | %7.f C | %8.2f %%", pmta(THM_VALUE_GFX), pmta(THM_LIMIT_GFX), (pmta(THM_VALUE_GFX) / pmta(THM_LIMIT_GFX) * 100));
@@ -417,6 +425,7 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
     float peak_core_frequency, peak_core_temp, peak_core_voltage;
     float total_core_voltage, total_core_power, total_usage, total_core_CC6;
     int core_disabled, core_number;
+    float thm_value = 0;
     //constraints block
     float edc_value;
     //power block
@@ -453,6 +462,11 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
     for (i = 0; i < pmt->max_cores; i++) {
         core_disabled = (sysinfo->core_disable_map >> i)&0x01;
         core_frequency = pmta0(CORE_FREQEFF[i]) * 1000.f;
+
+        if (!pmt->THM_VALUE) {
+            if (pmta0(THM_VALUE_CORES[i]) > 0 && pmta0(THM_VALUE_CORES[i]) > thm_value)
+                thm_value = pmta0(THM_VALUE_CORES[i]);
+        }
 
         core_voltage = pmta0(CORE_VOLTAGE[i]); // True core voltage
         // Rumours say this is how AMD calculates core voltage
@@ -618,8 +632,10 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
                 "soc_edclimit=%.fi,", pmta0(EDC_LIMIT_SOC));
     }
 
+    if (pmt->THM_VALUE) thm_value = pmta(THM_VALUE);
+
     fprintf(stdout,
-            "cpu_thm=%.2f,", pmta0(THM_VALUE));
+            "cpu_thm=%.2f,", thm_value);
 
     fprintf(stdout,
             "cpu_thmlimit=%.0fi,", pmta0(THM_LIMIT));
