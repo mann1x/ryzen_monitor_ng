@@ -1,0 +1,254 @@
+<h1>clgpustress</h1>
+
+<p>Heavy OpenCL GPU stress tester (version 0.0.9.4)</p>
+
+<h3>IMPORTANT CAUTION!!!!!</h3>
+
+<p><strong>THIS PROGRAM IS VERY DANGEROUS FOR GRAPHICS CARD AND CAN OVERHEAT OR DAMAGE YOUR GRAPHICS CARD!
+PLEASE USE CAREFULLY THIS PROGRAM. I RECOMMEND TO RUN THIS PROGRAM ON ALL STOCK PARAMETERS
+OF THE DEVICES (CLOCKS, VOLTAGES, ESPECIALLY GPU MEMORY CLOCK).</strong></p>
+
+<p><strong>THIS PROGRAM IS INFLUENCED BY PRIMEGRID GENEFER AND ALSO IS VERY SENSITIVE FOR ANY OVERCLOCKING,
+BUT MUCH BETTER LOADS GPU CORE. MOREOVER MUCH BETTER BURNS GRAPHICS CARD THAN FURMARK!</strong></p>
+
+<p><strong>THIS PROGRAM WAS TESTED ONLY ON RADEON HD 7850 AND CAN BEHAVES INCORRECTLY ON OTHER GRAPHICS CARDS.</strong></p>
+
+<p><strong>YOU ARE USING THIS SOFTWARE ONLY AT YOUR OWN RISK!</strong></p>
+
+<h3>About older versions</h3>
+
+<p>An older versions (older than 0.0.8.8) were really alpha test versions.
+They has few SERIOUS bugs and were only for testing and bug hunting.
+We recommend to use versions not older than 0.0.8.8.
+For Windows we recommend version not older than 0.0.9.4.</p>
+
+<h3>Binaries, sources and website</h3>
+
+<p>Project website: <a href="http://clgpustress.nativeboinc.org">http://clgpustress.nativeboinc.org</a>.</p>
+
+<p>Binaries are at <a href="http://files.nativeboinc.org/offtopic/clgpustress/">http://files.nativeboinc.org/offtopic/clgpustress/</a>
+and at
+<a href="http://clgpustress.nativeboinc.org/downloads.html">http://clgpustress.nativeboinc.org/downloads.html</a>.</p>
+
+<p>Source code packages are at <a href="http://clgpustress.nativeboinc.org/downloads.html">http://clgpustress.nativeboinc.org/downloads.html</a> and
+at <a href="https://github.com/matszpk/clgpustress">https://github.com/matszpk/clgpustress</a>.</p>
+
+<p>Source codes are at <a href="https://github.com/matszpk/clgpustress">https://github.com/matszpk/clgpustress</a>.</p>
+
+<h3>License</h3>
+
+<p>Program is distributed under the GPLv2 license.
+For more information please read LICENSE file inside the program package.</p>
+
+<h3>Program behaviour</h3>
+
+<p>By default program finds ALL GPU devices from all platforms and runs stress for them.
+You can choose particular device with using '-L' or '--devicesList' option.
+Also you can select OpenCL platform by using '-A', '-N' or '-E' options
+(also, you can combine these options to select many platforms).
+By default program calibrates test for performance and memory
+bandwidth. While running tests program checks result with previously computed results on the device.
+If results mismatches program terminates stress test for failed device.
+By default program terminates stress testing when any device will fail. You can add
+'-f' or '--exitIfAllFails' option to force continue stress testing for other devices.</p>
+
+<h3>Program version</h3>
+
+<ul>
+<li>Version with command-line interface is named as 'gpustress-cli'.</li>
+<li>Version with GUI is named as 'gpustress-gui'.</li>
+</ul>
+
+<h3>Software requirements:</h3>
+
+<ul>
+<li>Windows or Linux operating system in x86 or x86-64 version (for binaries)</li>
+<li>Windows 7 or later (recommended for binaries)</li>
+<li>Linux with libstdc++ from GCC 4.8 or later (recommended for binaries)</li>
+<li>OpenCL 1.1 or later (from GPU vendor drivers or other compatible)</li>
+<li>OpenCL 1.1 C++ binding later (for compilation)</li>
+<li>popt library (only for Linux version or for compilation)</li>
+<li>C++11 compliant compiler or Microsoft Visual Studio Express 2012 (for compilation)</li>
+<li>C++11 compliant C++ libraries (only for Linux)</li>
+<li>FLTK 1.3 for GUI version (for compilation, binaries are statically linked with FLTK)</li>
+</ul>
+
+<h3>Building program</h3>
+
+<p>Before any building you must specify the OpenCL root path
+(path where are libraries and includes of the OpenCL).
+An OpenCL root path is defined as 'OPENCLDIR' variable in the Makefile.</p>
+
+<p>NOTE: If you have 64-bit Linux system you must also correct 'LIBDIRS' in the Makefile to
+'-L$(OPENCLDIR)/lib64'.</p>
+
+<p>Enter command:</p>
+
+<p>make</p>
+
+<p>To clean project enter command:</p>
+
+<p>make clean</p>
+
+<h3>Memory requirements</h3>
+
+<p>Program prints size of memory required in the device memory.
+Standard tests requires 64 * blocksNum * workFactor * maxComputeUnits * workGroupSize bytes in
+device memory. By default program choose workGroupSize = maxWorkGroupSize.</p>
+
+<p>You can get maxComputeUnits and maxWorkGroupSize from 'clinfo' or from other
+OpenCL diagnostics utility. </p>
+
+<p>The '-I' (or '--inAndOut') option chooses standard method with decoupled input and output
+which requires double size of memory on the device.
+By default program uses single buffer for input and output.</p>
+
+<p>Program needs also host memory: 192 * blocksNum * workSize bytes for buffers.</p>
+
+<h3>Usage</h3>
+
+<p>Examples of usage:</p>
+
+<ul>
+<li>print help: ./gpustress -?</li>
+<li>simplest usage: ./gpustress</li>
+<li>run stress: ./gpustress -G -W512 -S32 -B2 -T0</li>
+<li>run stress only on AMD devices: ./gpustress -A</li>
+<li>run stress only on NVIDIA devices: ./gpustress-cli -N</li>
+<li>run stress only on Intel devices: ./gpustress-cli -E</li>
+<li>run stress only on first device from first platform: ./gpustress-cli -L 0:0</li>
+<li>run stress only on second device from second platform: ./gpustress-cli -L 1:1</li>
+</ul>
+
+<p>If option '-j' is not specified then program automatically calibrates
+test for device for performance and memory bandwidth.</p>
+
+<h4>Supported tests</h4>
+
+<p>Currently gpustress has 3 tests:</p>
+
+<ul>
+<li>0 - standard with local memory checking (for Radeon HD 7850 the most effective test)</li>
+<li>1 - standard without local memory checking</li>
+<li>2 - polynomial walking (for Radeon HD 7850 the less effective)</li>
+<li>3 - polynomial walking with local memory (for Radeon HD 7850 the less effective)</li>
+</ul>
+
+<h4>Parameters for the tests</h4>
+
+<p>Now you can specify following parameters for tests:</p>
+
+<ul>
+<li>workFactor - controls work size: (workitems number: workFactor * maxComputeUnits * workGroupSize)</li>
+<li>blocksNum - number of blocks processed by single workitem (can be in 1-16)</li>
+<li>passIters - number of iterations of the execution kernel in single pass</li>
+<li>kitersNum - number of iteration of core computation within single memory access</li>
+<li>inputAndOutput - enables input/output mode</li>
+<li>testType - test (builtin kernel) (0-2). tests are described in supported tests section</li>
+<li>groupSize - work group size (by default or if zero, program chooses maxWorkGroupSize)</li>
+</ul>
+
+<p>You can choose these parameter by using following options:</p>
+
+<ul>
+<li>'-W' or '--workFactor' - workFactor</li>
+<li>'-B' or '--blocksNum' - blocksNum</li>
+<li>'-S' or '--passIters' - passIters</li>
+<li>'-j' or '--kitersNum' - kitersNum</li>
+<li>'-T' or '--testType' - test type (builtin kernel)</li>
+<li>'-g' or '--groupSize' - groupSize</li>
+</ul>
+
+<p>For groupSize, if value is zero or is not specified then program
+chooses maxWorkGroupSize for device.
+For kitersNum, if value is zero of is not specified then program
+calibates kernel for a memory bandwidth and a performance.</p>
+
+<h4>Specifiyng devices to testing:</h4>
+
+<p>GPUStress provides simple method to select devices. To print all available devices you can
+use '-l' option:</p>
+
+<p>./gpustress-cli -l</p>
+
+<p>GPUstress prints all OpenCL devices, also prints their the platform id and the device id.</p>
+
+<p>GPUStress allows to select devices from specified the OpenCL platform, by using following options:</p>
+
+<ul>
+<li>'-A' or '--useAMD' - choose devices from AMD (AMDAPP) platform</li>
+<li>'-N' or '--useNVIDIA' - choose devices from NVIDIA (NVIDIA CUDA) platform</li>
+<li>'-E' or '--useIntel' - choose devices from Intel platform</li>
+</ul>
+
+<p>You can combime these options to choose many platforms.
+By default gpustress chooses devices from all  platforms.</p>
+
+<p>Moreover gpustress allows to choose devices of particular type:</p>
+
+<ul>
+<li>'-C' or '--useCPUs' - choose CPU devices</li>
+<li>'-G' or '--useGPUs' - choose GPU devices</li>
+<li>'-a' or '--useAccs' - choose accelerators</li>
+</ul>
+
+<p>You can combine these options to choose devices of many types.
+By default gpustresss chooses only GPU devices.</p>
+
+<p>The custom devices are not supported, because doesn't supports for the OpenCL compiler.</p>
+
+<p>Moreover, you can choose a particular devices from a particular platforms with using
+'-L' or '--devicesList' option. Parameter of this option is comma-separated list of
+the platform id and the device id separated by using colon. Following example:</p>
+
+<p>./gpustress-cli -L 0:0,1:1,1:2,1:3</p>
+
+<p>chooses first device from first platform; second,third,fourth device from second platform.</p>
+
+<h4>Specifying configuration for particular devices</h4>
+
+<p>In easiest way, you can choose one value for all devices by providing a single value.</p>
+
+<p>You can choose different values for particular devices for following parameters:
+workFactor, blocksNum, passItersNum, kitersNum, testType, inputAndOutput.
+Values are in list that is comma separated, excepts inputAndOutput where is sequence of
+the characters ('1','Y','T' - enables; '0','N','F' - disables). Moreover, parameter of '-I' option
+is optional (if not specified program assumes that inputAndOutput modes will be
+applied for all devices).</p>
+
+<p>Examples:</p>
+
+<p>./gpustress-cli -L 0:0,0:1 -W 512,4 -B 2 -T 1 -I YN</p>
+
+<p>chooses for all devices blocksNum=2, testType=1, for first device: workFactor=512, inAndOut=yes
+; for second device: workFactor=4, inAndOut=no.</p>
+
+<p>If value's list will be shorter than list of the choosen devices then
+last provided value from list will be choosen for remaining devices.</p>
+
+<p>For a determining the order of the choosen devices, you can use '-c' or '--choosenDevices'
+option to get that order.</p>
+
+<h3>GUI documentation</h3>
+
+<p>gpustress-gui accepts similar set of command line options like gpustress.</p>
+
+<p>The GUI of the program contains three tabs. First allow to select devices whose will be tested.
+You may do to this by using filtering ('Choose by filtering') or by choosing devices from list
+('Choose from list').</p>
+
+<p>After choosing set of a devices you can set test parameters for devices in 'Test configs' tab.
+The top choice widget (combo box) allow to choose device for which test configuration will be set.
+'Copy to all devices' copies currently choosen test configuration to
+test configuration for all devices. 'Copy to these same devices' copies configuration only for
+devices that have this same name and belongs to this same platform.</p>
+
+<p>'Test logs' tab displays test logs for running stress test.
+The top choice widget (combobox) allow to choose device for which a test log will be displayed.
+You can save choosen log to file with using 'Save log' option or clear log with using
+'Clear log' option.
+'START' button runs stress test. If any failure will be happened program will display
+alert message box and will choose the test log for failed device.</p>
+
+<p>Option 'Stop test only when all device will fail'
+causes stop test only when all devices will fail. </p>

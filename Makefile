@@ -1,0 +1,9 @@
+TOPTARGETS := all clean install debug
+
+SUBDIRS := src
+
+$(TOPTARGETS): $(SUBDIRS)
+$(SUBDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+.PHONY: $(TOPTARGETS) $(SUBDIRS)
