@@ -51,7 +51,7 @@
 #include "commonfuncs.h"
 #include "argparse.h"
 
-#define PROGRAM_VERSION "2.0.1"
+#define PROGRAM_VERSION "2.0.3"
 #define BUF_SIZE 65536
 #define getName(var) #var
 
@@ -903,7 +903,7 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
 void disabled_cores_from_pmt(pm_table *pmt, system_info *sysinfo) {
     int i, mask;
     float power, voltage, fit, iddmax, freq, freqeff, c0, cc1, irm;
-    for (i = 0; i < sysinfo->cores; i++) {
+    for (i = 0; i < pmt->max_cores; i++) {
         power = pmta0(CORE_POWER[i]);
         voltage = pmta0(CORE_VOLTAGE[i]);
         fit = pmta0(CORE_FIT[i]);
@@ -950,7 +950,7 @@ int kbhit(void)
   return 0;
 }
 
-int init_pmt(unsigned int force) {
+int init_pmt(pm_table* pmt, unsigned int force) {
     unsigned char* pm_buf;
 
     if (!smu_pm_tables_supported(&obj)) {
@@ -969,14 +969,14 @@ int init_pmt(unsigned int force) {
     }
 
     //Select matching PM Table
-    if (!select_pm_table_version(force ? force : obj.pm_table_version, &pmt, pm_buf)) {
+    if (!select_pm_table_version(force ? force : obj.pm_table_version, pmt, pm_buf)) {
         fprintf(stderr, "This PM Table version (0x%x) is currently not supported.\n", force ? force : obj.pm_table_version);
         fprintf(stderr, "Processor name: %s\n", get_processor_name());
         fprintf(stderr, "SMU FW version: %s\n", smu_get_fw_version(&obj));
         return -102;
     }
     //Prevent illegal memory access
-    if (obj.pm_table_size < pmt.min_size) {
+    if (obj.pm_table_size < pmt->min_size) {
         fprintf(stderr, "Selected PM Table is larger than the PM Table returned by the SMU.\n");
         return -103;
     }
@@ -987,6 +987,7 @@ int init_pmt(unsigned int force) {
 
 int init_sysinfo(pm_table* pmt, system_info* sysinfo) {
     unsigned char* pm_buf;
+    int pmt_hack_fuse = 0;
 
     sysinfo->enabled_cores_count = 1;
 
@@ -995,18 +996,15 @@ int init_sysinfo(pm_table* pmt, system_info* sysinfo) {
     sysinfo->smu_codename= obj.codename;
     sysinfo->smu_fw_ver  = smu_get_fw_version(&obj);
 
-    int pmt_hack_fuse = 0;
-    if (sysinfo->family == 0x17 && sysinfo->model == 0x18) pmt_hack_fuse = 1;
-
     //PMT hack for core_disabled_map 
-    if (smu_pm_tables_supported(&obj) && pmt_hack_fuse == 1) {
+    if (smu_pm_tables_supported(&obj)) {
         pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
         if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) == SMU_Return_OK) {
             disabled_cores_from_pmt(pmt, sysinfo);
         }
         free(pm_buf);
     }
-    
+   
     get_processor_topology(sysinfo);
 
     switch (obj.smu_if_version) {
@@ -1025,7 +1023,7 @@ int start_pm_export() {
     unsigned char* pm_buf;
     int err = 0;
     int ret;
-
+    
     pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
     select_pm_table_version(obj.pm_table_version, &pmt, pm_buf);
 
@@ -1074,10 +1072,10 @@ int start_pm_export() {
 void start_pm_monitor(unsigned int force, unsigned int test_export) {
     unsigned char *pm_buf;
     int exit_loop = 0;
-    
+
     pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
     select_pm_table_version(force?force:obj.pm_table_version, &pmt, pm_buf);
-    
+
     int kpress;
     int update_time_ms = update_time_s*1000;
     int restupdate = 0, draw_update = 0;
@@ -1085,6 +1083,7 @@ void start_pm_monitor(unsigned int force, unsigned int test_export) {
 
     fprintf(stdout, "\e[2J\e[1;1H"); //Clear entire screen;Move cursor to (1,1) 
     fprintf(stdout, "\e[?25l"); // Hide Cursor
+
 
     while(exit_loop == 0){
             
@@ -1383,7 +1382,7 @@ int main(int argc, const char** argv) {
         //exit(0);
 
         if (!err) {
-            err = init_pmt(forcetable);
+            err = init_pmt(&pmt, forcetable);
             init_sysinfo(&pmt, &sysinfo);
             pmt_refresh(&pmt);            
         }
@@ -1567,7 +1566,7 @@ int main(int argc, const char** argv) {
                                 export_update_time_s = force_update_time_s;
                             }
                             if (!err) {
-                                err = init_pmt(forcetable);
+                                err = init_pmt(&pmt, forcetable);
                                 init_sysinfo(&pmt, &sysinfo);
                             }
                             if (!err && pm_export_pipe) {

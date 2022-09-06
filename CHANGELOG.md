@@ -1,3 +1,6 @@
+# Version 2.0.3
+- Fix version number
+- Fix fake fuse hack
 # Version 2.0.2
 - Hack to create fake fuse for Family 17h Model 18h (Picasso Athlon 300U)
 # Version 2.0.1

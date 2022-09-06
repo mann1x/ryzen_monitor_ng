@@ -149,7 +149,7 @@ void get_processor_topology(system_info *sysinfo) {
                 sysinfo->cores_per_ccx = 8 - count_set_bits(sysinfo->core_disable_map & 0xff);
             } else {
                 core_disable_map_addr = 0x5D448;
-                if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map_tmp) != SMU_Return_OK) {
+                if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map_tmp) == SMU_Return_OK) {
                     core_disable_map_tmp = (core_disable_map_tmp >> 11) & 0xFF;
                     sysinfo->core_disable_map = core_disable_map_tmp;
                 } else {
@@ -168,23 +168,23 @@ void get_processor_topology(system_info *sysinfo) {
             sysinfo->enabled_cores_count = 8*(sysinfo->ccds) - count_set_bits(sysinfo->core_disable_map);
             break;
     }
-
-    if (sysinfo->family == 0x17 && sysinfo->model == 0x18)
+    if (sysinfo->family == 0x17 && sysinfo->model == 0x18) {
         sysinfo->core_disable_map = sysinfo->core_disable_map_pmt;
+    }
 
     sysinfo->coremap=(int *)malloc(sysinfo->cores * sizeof(int));
     
-    int c, cx = 0, cc = 0, core_disabled;
+    int c, cx = 0, core_disabled;
     
     for (c = 0; c < 8*(sysinfo->ccds); c++) {
         core_disabled = (sysinfo->core_disable_map >> c)&0x01;
+        if (cx >= sysinfo->cores) break;
         if (!core_disabled) {
             sysinfo->coremap[cx] = c;
             cx++;
         }
-        //cc++;
     } 
-  
+
     sysinfo->available=1;
 }
 
