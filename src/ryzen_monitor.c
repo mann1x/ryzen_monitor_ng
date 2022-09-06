@@ -900,19 +900,19 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
     
 }
 
-void disabled_cores_0x400005(pm_table *pmt, system_info *sysinfo) {
+void disabled_cores_from_pmt(pm_table *pmt, system_info *sysinfo) {
     int i, mask;
     float power, voltage, fit, iddmax, freq, freqeff, c0, cc1, irm;
-    for (i = 0; i < 8; i++) {
-        power = pmta(CORE_POWER[i]);
-        voltage = pmta(CORE_VOLTAGE[i]);
-        fit = pmta(CORE_FIT[i]);
-        iddmax = pmta(CORE_IDDMAX[i]);
-        freq = pmta(CORE_FREQ[i]);
-        freqeff = pmta(CORE_FREQEFF[i]);
-        c0 = pmta(CORE_C0[i]);
-        cc1 = pmta(CORE_CC1[i]);
-        irm = pmta(CORE_IRM[i]);
+    for (i = 0; i < sysinfo->cores; i++) {
+        power = pmta0(CORE_POWER[i]);
+        voltage = pmta0(CORE_VOLTAGE[i]);
+        fit = pmta0(CORE_FIT[i]);
+        iddmax = pmta0(CORE_IDDMAX[i]);
+        freq = pmta0(CORE_FREQ[i]);
+        freqeff = pmta0(CORE_FREQEFF[i]);
+        c0 = pmta0(CORE_C0[i]);
+        cc1 = pmta0(CORE_CC1[i]);
+        irm = pmta0(CORE_IRM[i]);
         
         if (power == 0 && voltage == 0 && fit == 0 && iddmax == 0 && freq == 0 && freqeff == 0 && c0 == 0 && cc1 == 0 && irm == 0 ) {
             mask = 1 << i;
@@ -995,15 +995,16 @@ int init_sysinfo(pm_table* pmt, system_info* sysinfo) {
     sysinfo->smu_codename= obj.codename;
     sysinfo->smu_fw_ver  = smu_get_fw_version(&obj);
 
-    //PMT hack for Cezanne's core_disabled_map 
-    if (smu_pm_tables_supported(&obj)) {
-        if (obj.pm_table_version == 0x400005) {
-            pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
-            if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) == SMU_Return_OK) {
-                disabled_cores_0x400005(pmt, sysinfo);
-            }
-            free(pm_buf);
+    int pmt_hack_fuse = 0;
+    if (sysinfo->family == 0x17 && sysinfo->model == 0x18) pmt_hack_fuse = 1;
+
+    //PMT hack for core_disabled_map 
+    if (smu_pm_tables_supported(&obj) && pmt_hack_fuse == 1) {
+        pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
+        if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) == SMU_Return_OK) {
+            disabled_cores_from_pmt(pmt, sysinfo);
         }
+        free(pm_buf);
     }
     
     get_processor_topology(sysinfo);

@@ -1,3 +1,5 @@
+# Version 2.0.2
+- Hack to create fake fuse for Family 17h Model 18h (Picasso Athlon 300U)
 # Version 2.0.1
 - Fixes for Picasso PM table 0x1E0004
 # Version 2.0.0
