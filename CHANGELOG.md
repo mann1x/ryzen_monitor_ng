@@ -1,3 +1,7 @@
+# Version 2.0.4
+- Fix for PM hack
+- Enabled the disabled cores hack also for reading a dump
+- Fix EDC in export when not available from PM table
 # Version 2.0.3
 - Fix version number
 - Fix fake fuse hack
