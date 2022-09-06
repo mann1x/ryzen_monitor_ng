@@ -168,8 +168,10 @@ void get_processor_topology(system_info *sysinfo) {
             sysinfo->enabled_cores_count = 8*(sysinfo->ccds) - count_set_bits(sysinfo->core_disable_map);
             break;
     }
+    
     if (sysinfo->family == 0x17 && sysinfo->model == 0x18) {
         sysinfo->core_disable_map = sysinfo->core_disable_map_pmt;
+        sysinfo->enabled_cores_count = sysinfo->cores-count_set_bits(sysinfo->core_disable_map);
     }
 
     sysinfo->coremap=(int *)malloc(sysinfo->cores * sizeof(int));

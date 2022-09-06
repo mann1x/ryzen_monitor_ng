@@ -51,7 +51,7 @@
 #include "commonfuncs.h"
 #include "argparse.h"
 
-#define PROGRAM_VERSION "2.0.3"
+#define PROGRAM_VERSION "2.0.4"
 #define BUF_SIZE 65536
 #define getName(var) #var
 
@@ -621,7 +621,7 @@ void draw_export(pm_table *pmt, system_info *sysinfo) {
     }
 
     fprintf(stdout,
-            "cpu_edc=%.3f,", pmta0(EDC_VALUE));
+            "cpu_edc=%.3f,", edc_value);
     fprintf(stdout,
             "cpu_edclimit=%.fi,", pmta0(EDC_LIMIT));
 
@@ -1168,9 +1168,12 @@ void read_from_dumpfile(char *dumpfile, unsigned int version, unsigned int test_
     }
     
     sysinfo.available=0; //Did not read sysinfo
-    sysinfo.enabled_cores_count = pmt.max_cores;
-    sysinfo.core_disable_map=0;
-    sysinfo.cores=sysinfo.enabled_cores_count;
+    sysinfo.cores = pmt.max_cores;
+
+    disabled_cores_from_pmt(&pmt, &sysinfo);
+
+    sysinfo.core_disable_map=sysinfo.core_disable_map_pmt;
+    sysinfo.enabled_cores_count=sysinfo.cores-count_set_bits(sysinfo.core_disable_map);
 
     if (test_export)
         draw_export(&pmt, &sysinfo);
