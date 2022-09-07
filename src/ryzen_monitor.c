@@ -51,7 +51,7 @@
 #include "commonfuncs.h"
 #include "argparse.h"
 
-#define PROGRAM_VERSION "2.0.4"
+#define PROGRAM_VERSION "2.0.5"
 #define BUF_SIZE 65536
 #define getName(var) #var
 
