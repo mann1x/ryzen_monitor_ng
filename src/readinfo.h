@@ -40,13 +40,14 @@ typedef struct {
     unsigned int core_disable_map;
     unsigned int core_disable_map_pmt;
     unsigned int enabled_cores_count;
+    unsigned int physical_cores;
     unsigned int family;
     unsigned int model;
     int *coremap;
 } system_info;
 
 void print_memory_timings();
-void get_processor_topology(system_info *sysinfo);
+void get_processor_topology(system_info *sysinfo, int init_debug);
 unsigned int count_set_bits(unsigned int v);
 const char* get_processor_name();
 void append_u32_to_str(char* buffer, unsigned int val);

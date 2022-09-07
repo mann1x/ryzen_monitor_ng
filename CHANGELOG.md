@@ -1,3 +1,6 @@
+# Version 2.0.5
+- New sysinfo routine
+- Command line switch to print debug init information
 # Version 2.0.4
 - Fix for PM hack
 - Enabled the disabled cores hack also for reading a dump

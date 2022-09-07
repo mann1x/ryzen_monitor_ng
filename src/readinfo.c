@@ -73,10 +73,10 @@ const char* get_processor_name() {
     return p;
 }
 
-void get_processor_topology(system_info *sysinfo) {
-    unsigned int ccds_present, ccds_down, ccd_enable_map, ccd_disable_map,
-        core_disable_map_addr, core_disable_map_tmp, logical_cores, threads_per_core,
-        fam, model, fuse1, fuse2, offs, eax, ebx, ecx, edx, zen_version = 1;
+void get_processor_topology(system_info *sysinfo, int debug_init) {
+    unsigned int ccds_present, ccds_down, ccd_enable_map, ccd_disable_map, ccx_per_ccd, ccd_offset = 0,
+        core_disable_map_addr, core_disable_map_tmp, logical_cores, threads_per_core, physical_cores,
+        fam, model, fuse1, fuse2, offs, eax, ebx, ecx, edx;
 
     __get_cpuid(0x00000001, &eax, &ebx, &ecx, &edx);
     fam = ((eax & 0xf00) >> 8) + ((eax & 0xff00000) >> 20);
@@ -91,20 +91,17 @@ void get_processor_topology(system_info *sysinfo) {
     fuse1 = 0x5D218;
     fuse2 = 0x5D21C;
     offs = 0x238;
+    ccx_per_ccd = 2;
 
     if (fam == 0x19) {
         //fuse1 += 0x10;
         //fuse2 += 0x10;
         offs = 0x598;
-        zen_version = 3;
+        ccx_per_ccd = 1;
     }
     else if (fam == 0x17 && model != 0x71 && model != 0x31) {
         fuse1 += 0x40;
         fuse2 += 0x40;
-        zen_version = 2;
-    }
-    else if (fam == 0x17) {
-        zen_version = 2;
     }
 
     if (smu_read_smn_addr(&obj, fuse1, &ccds_present) != SMU_Return_OK ||
@@ -114,65 +111,52 @@ void get_processor_topology(system_info *sysinfo) {
     }
 
     ccd_enable_map = (ccds_present >> 22) & 0xff;
-    ccd_disable_map = ((ccds_present >> 30) & 0x3) | ((ccds_down & 0x3f) << 2);
+    ccd_disable_map = ((ccds_down & 0x3f) << 2) | ((ccds_present >> 30) & 0x3);
 
-    core_disable_map_addr = (0x30081800 + offs);
-    sysinfo->core_disable_map = 0;
-    if (ccd_enable_map & 0x01) {
-        if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map_tmp) != SMU_Return_OK) {
-            perror("Failed to read disabled core fuse");
-            exit(-1);
-        }
-        sysinfo->core_disable_map |= core_disable_map_tmp & 0xff;
+    core_disable_map_addr = (fam == 0x19 && model == 0x50) ? 0x5D448 : (0x30081800 + offs);
+
+    ccd_enable_map = count_set_bits(ccd_enable_map) == 0 ? 0x1 : ccd_enable_map;
+    //sysinfo->ccds = count_set_bits(ccd_enable_map) > 0 ? count_set_bits(ccd_enable_map) : 1;
+    sysinfo->ccds = count_set_bits(ccd_enable_map);
+    sysinfo->ccxs = sysinfo->ccds * ccx_per_ccd;
+    sysinfo->physical_cores = (sysinfo->ccxs * 8) / ccx_per_ccd;
+
+    if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map_tmp) != SMU_Return_OK) {
+        perror("Failed to read disabled core fuse");
+        exit(-1);
     }
-    if (ccd_enable_map & 0x02) {
-        if (smu_read_smn_addr(&obj, core_disable_map_addr|0x2000000, &core_disable_map_tmp) != SMU_Return_OK) {
-            perror("Failed to read disabled core fuse");
-            exit(-1);
+
+    if (fam == 0x19 && model == 0x50) {
+        sysinfo->core_disable_map = (core_disable_map_tmp >> 11) & 0xFF;
+    } else {
+        for (unsigned int i = 0; i < sysinfo->ccds; i++)
+        {
+            if (ccd_enable_map & i)
+            {
+                if (smu_read_smn_addr(&obj, core_disable_map_addr | ccd_offset, &core_disable_map_tmp) != SMU_Return_OK) {
+                    perror("Failed to read disabled core fuse for CCD");
+                    exit(-1);
+                }
+                sysinfo->core_disable_map |= (core_disable_map_tmp & 0xff) << i * 8;
+            }
+            ccd_offset += 0x2000000;
         }
-        sysinfo->core_disable_map |= (core_disable_map_tmp & 0xff)<<8;
     }
+
+    sysinfo->cores_per_ccx = 8 - count_set_bits(sysinfo->core_disable_map & 0xff) / ccx_per_ccd;
 
     if (!threads_per_core)
         sysinfo->cores = logical_cores;
     else
         sysinfo->cores = logical_cores / threads_per_core;
 
-    switch(zen_version)
-    {
-        case 3:
-            //Zen3 does not have CCXs anymore. They now have 8 cores per CCD
-            //each with the same access to each other and the common L3 cache.
-            if (model != 0x50) {// Exclude Cezanne
-                sysinfo->ccxs = 0;
-                sysinfo->ccds = count_set_bits(ccd_enable_map);
-                sysinfo->cores_per_ccx = 8 - count_set_bits(sysinfo->core_disable_map & 0xff);
-            } else {
-                core_disable_map_addr = 0x5D448;
-                if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map_tmp) == SMU_Return_OK) {
-                    core_disable_map_tmp = (core_disable_map_tmp >> 11) & 0xFF;
-                    sysinfo->core_disable_map = core_disable_map_tmp;
-                } else {
-                    sysinfo->core_disable_map = sysinfo->core_disable_map_pmt;
-                }
-                sysinfo->ccds = 1;
-                sysinfo->cores_per_ccx = 8;
-            }
-            sysinfo->enabled_cores_count = 8*(sysinfo->ccds) - count_set_bits(sysinfo->core_disable_map);
-            break;
-        case 2:
-        default:
-            sysinfo->cores_per_ccx = (8 - count_set_bits(sysinfo->core_disable_map & 0xff)) / 2;
-            sysinfo->ccds = count_set_bits(ccd_enable_map);
-            sysinfo->ccxs = sysinfo->cores == sysinfo->cores_per_ccx ? 1 : sysinfo->ccds * 2;
-            sysinfo->enabled_cores_count = 8*(sysinfo->ccds) - count_set_bits(sysinfo->core_disable_map);
-            break;
-    }
-    
+    /*
     if (sysinfo->family == 0x17 && sysinfo->model == 0x18) {
         sysinfo->core_disable_map = sysinfo->core_disable_map_pmt;
-        sysinfo->enabled_cores_count = sysinfo->cores-count_set_bits(sysinfo->core_disable_map);
     }
+    */
+
+    sysinfo->enabled_cores_count = sysinfo->physical_cores-count_set_bits(sysinfo->core_disable_map);
 
     sysinfo->coremap=(int *)malloc(sysinfo->cores * sizeof(int));
     
@@ -186,6 +170,15 @@ void get_processor_topology(system_info *sysinfo) {
             cx++;
         }
     } 
+
+    if (debug_init) {
+        fprintf(stdout, "\nFamily: 0x%X Model: 0x%X\n", sysinfo->family, sysinfo->model);
+        fprintf(stdout, "ccds: %i ccxs: %i cores: %i cores_per_ccx: %i enabled: %i\n", sysinfo->ccds, sysinfo->ccxs, sysinfo->cores, sysinfo->cores_per_ccx, sysinfo->enabled_cores_count);
+        fprintf(stdout, "core_disable_map: 0x%X tmp: 0x%X pmt: 0x%X core_disable_addr: 0x%X\n", sysinfo->core_disable_map, core_disable_map_tmp, sysinfo->core_disable_map_pmt, core_disable_map_addr);
+        fprintf(stdout, "ccds_present: 0x%X  ccds_down: 0x%X\n", ccds_present, ccds_down);
+        fprintf(stdout, "ccd_enable_map: 0x%X ccd_disable_map: 0x%X\n", ccd_enable_map, ccd_disable_map);
+        fprintf(stdout, "\n");
+    }
 
     sysinfo->available=1;
 }

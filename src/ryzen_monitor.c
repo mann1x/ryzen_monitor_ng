@@ -985,7 +985,7 @@ int init_pmt(pm_table* pmt, unsigned int force) {
     return 0;
 }
 
-int init_sysinfo(pm_table* pmt, system_info* sysinfo) {
+int init_sysinfo(pm_table* pmt, system_info* sysinfo, int init_debug) {
     unsigned char* pm_buf;
     int pmt_hack_fuse = 0;
 
@@ -1005,7 +1005,7 @@ int init_sysinfo(pm_table* pmt, system_info* sysinfo) {
         free(pm_buf);
     }
    
-    get_processor_topology(sysinfo);
+    get_processor_topology(sysinfo, init_debug);
 
     switch (obj.smu_if_version) {
         case IF_VERSION_9:  sysinfo->if_ver =  9; break;
@@ -1169,6 +1169,9 @@ void read_from_dumpfile(char *dumpfile, unsigned int version, unsigned int test_
     
     sysinfo.available=0; //Did not read sysinfo
     sysinfo.cores = pmt.max_cores;
+    sysinfo.physical_cores = pmt.max_cores;
+    sysinfo.ccds = pmt.max_cores > 8 ? 2 : 1;
+    sysinfo.ccxs = pmt.zen_version == 3 ? sysinfo.ccds : sysinfo.ccds * 2;
 
     disabled_cores_from_pmt(&pmt, &sysinfo);
 
@@ -1288,7 +1291,7 @@ int main(int argc, const char** argv) {
 
     int helpinfo=0, versioninfo=0, memorytimings=0, err=0, skip=0, cmdmode=0;
     int printtimings=0, force_update_time_s=0, test_export=0;
-    int forcetable=0, dumptable=0;
+    int forcetable=0, dumptable=0, init_debug=0;
     int tview_compact=0, tview_info=0, tview_counts=0, tview_electrical=0, tview_memory=0, tview_gfx=0, tview_power=0;
     int set_enable_oc=0, set_disable_oc=0, get_ocmode=0, set_enable_eco=0, set_enable_maxperf=0;
     int get_ppt=0, get_pptfast=0, get_pptapu=0, get_tdc=0, get_tdcsoc=0, get_edc=0, get_edcsoc=0, get_stapm=0, get_ppt_time=0, get_stapm_time=0, get_thm=0, get_scalar=0, get_cocountall=0;
@@ -1321,6 +1324,7 @@ int main(int argc, const char** argv) {
             OPT_STRING('f', "forcetable", &forcetablestr, "Force to use a specific PM table version (Hex value)."),
             OPT_BOOLEAN('\0', "dumptable", &dumptable, "Dump table on screen. Can be used with -t."),
             OPT_STRING('e', "export", &pm_export_pipe, "Export metrics mode to a named pipe, Influx inline protocol."),
+            OPT_BOOLEAN('\0', "init-debug", &init_debug, "Print initialization debug info and exit."),
             OPT_BOOLEAN('\0', "debuglog", &debuglog, "Print out debug error messages."),
             OPT_BOOLEAN('\0', "test-export", &test_export, "Export metrics mode to console for testing purpose, can be used with a raw-dumpfile."),
             OPT_BOOLEAN('c', "compact", &tview_compact, "Toggle compact view in monitor."),
@@ -1379,6 +1383,13 @@ int main(int argc, const char** argv) {
         err = -3;
     }
 
+    if (!err && init_debug) {
+        err = init_pmt(&pmt, forcetable);
+        init_sysinfo(&pmt, &sysinfo, init_debug);
+        pmt_refresh(&pmt);
+        err = -32768;
+    }
+
     if (cmd_mode) {
 
         //cmd_test_hsmp(&pmt, &sysinfo);
@@ -1386,7 +1397,7 @@ int main(int argc, const char** argv) {
 
         if (!err) {
             err = init_pmt(&pmt, forcetable);
-            init_sysinfo(&pmt, &sysinfo);
+            init_sysinfo(&pmt, &sysinfo, init_debug);
             pmt_refresh(&pmt);            
         }
 
@@ -1570,7 +1581,7 @@ int main(int argc, const char** argv) {
                             }
                             if (!err) {
                                 err = init_pmt(&pmt, forcetable);
-                                init_sysinfo(&pmt, &sysinfo);
+                                init_sysinfo(&pmt, &sysinfo, init_debug);
                             }
                             if (!err && pm_export_pipe) {
 
