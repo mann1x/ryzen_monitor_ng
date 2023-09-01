@@ -290,7 +290,7 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
         if (!view_compact) {
             print_line("Uncore Clock", "%5.f MHz", pmta(UCLK_FREQ));
             print_line("Memory Clock", "%5.f MHz", pmta(MEMCLK_FREQ));
-            print_line("cLDO_VDDM", "%7.4f V", pmta(V_VDDM));
+            if (pmt->V_VDDM)    print_line("cLDO_VDDM", "%7.4f V", pmta(V_VDDM));
             print_line("cLDO_VDDP", "%7.4f V", pmta(V_VDDP));
             if(pmt->V_VDDG)     print_line("cLDO_VDDG", "%7.4f V", pmta(V_VDDG));
             if(pmt->V_VDDG_IOD) print_line("cLDO_VDDG_IOD", "%7.4f V", pmta(V_VDDG_IOD));
@@ -324,7 +324,7 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
         if(pmt->VDDCR_SOC_POWER)
             print_line("VDDCR_SOC Power", "%7.3f W", pmta(VDDCR_SOC_POWER));
         if (!view_compact) {
-            if(pmt->IO_VDDCR_SOC_POWER)
+            if(pmt->IO_VDDCR_SOC_POWER && *pmt->IO_VDDCR_SOC_POWER != 0.0)
                 print_line("IO VDDCR_SOC Power", "%7.3f W", pmta(IO_VDDCR_SOC_POWER));
         }
         if(pmt->ROC_POWER) print_line("ROC Power", "%7.3f W", pmta(ROC_POWER));
@@ -372,7 +372,7 @@ void draw_screen(pm_table *pmt, system_info *sysinfo) {
             print_line("","");
             if(pmt->VDDIO_MEM_POWER && pmta(VDDIO_MEM_POWER) != NAN)
                 print_line("VDDIO_MEM Power", "%7.3f W", pmta(VDDIO_MEM_POWER));
-            if(pmt->IOD_VDDIO_MEM_POWER && pmta(IOD_VDDIO_MEM_POWER) != NAN)
+            if(pmt->IOD_VDDIO_MEM_POWER && pmta(IOD_VDDIO_MEM_POWER) != NAN && *pmt->IOD_VDDIO_MEM_POWER != 0.0)
                 print_line("IOD_VDDIO_MEM Power", "%7.3f W", pmta(IOD_VDDIO_MEM_POWER));
             if(pmt->DDR_VDDP_POWER) print_line("DDR_VDDP Power", "%7.3f W", pmta(DDR_VDDP_POWER));
             if(pmt->DDR_PHY_POWER) print_line("DDR Phy Power", "%7.3f W", pmta(DDR_PHY_POWER));
