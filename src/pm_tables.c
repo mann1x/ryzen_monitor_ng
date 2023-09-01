@@ -1160,11 +1160,12 @@ void pm_table_0x240903(pm_table *pmt, void* base_addr) {
     // https://gitlab.com/leogx9r/ryzen_smu/-/blob/master/userspace/monitor_cpu.c
     // Credit to Leonardo Gates <leogatesx9r@protonmail.com> under GPL V3
     //
-    // Could not test myself, as I dont have the hardware. But it should work just fine.
-    // Ryzen 3700X / 3800X
+    // Tested to work with Ryzen 3600. Should also work just fine for:
+    // Ryzen 3600X / 3700X / 3800X / 3800XT
 
     pmt->version = 0x240903;
     pmt->max_cores = 8; //Number of cores supported by this PM table version
+    pmt->max_l3 = 2; //Each CCX has its own L3$. Each CCD has two CCX. Hence, 2.
     pmt->zen_version = 2; //Zen2
 
     pmt->PPT_LIMIT                  = pm_element( 0);
@@ -1272,9 +1273,9 @@ void pm_table_0x240903(pm_table *pmt, void* base_addr) {
     pmt->IO_VDD18_POWER             = pm_element(121);
     pmt->TDP                        = pm_element(122);
     pmt->DETERMINISM                = pm_element(123);
-    pmt->V_VDDM                     = pm_element(124);
+    pmt->V_VDDG_CCD                 = pm_element(124); //Same as V_VDDM in newer AGESA versions
     pmt->V_VDDP                     = pm_element(125);
-    pmt->V_VDDG                     = pm_element(126);
+    pmt->V_VDDG_IOD                 = pm_element(126); //Same as V_VDDG in newer AGESA versions
 
     pmt->PEAK_TEMP                  = pm_element(127);
     pmt->PEAK_VOLTAGE               = pm_element(128);
