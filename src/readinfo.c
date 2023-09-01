@@ -126,7 +126,9 @@ void get_processor_topology(system_info *sysinfo, int debug_init) {
         exit(-1);
     }
 
-    if (fam == 0x19 && model == 0x50) {
+    if (fam == 0x17 && model == 0x71) {
+        sysinfo->core_disable_map = core_disable_map_tmp & 0xFF;
+    } else if (fam == 0x19 && model == 0x50) {
         sysinfo->core_disable_map = (core_disable_map_tmp >> 11) & 0xFF;
     } else {
         for (unsigned int i = 0; i < sysinfo->ccds; i++)
@@ -143,7 +145,7 @@ void get_processor_topology(system_info *sysinfo, int debug_init) {
         }
     }
 
-    sysinfo->cores_per_ccx = 8 - count_set_bits(sysinfo->core_disable_map & 0xff) / ccx_per_ccd;
+    sysinfo->cores_per_ccx = (8 - count_set_bits(sysinfo->core_disable_map & 0xff)) / ccx_per_ccd;
 
     if (!threads_per_core)
         sysinfo->cores = logical_cores;
@@ -271,7 +273,7 @@ int select_pm_table_version(unsigned int version, pm_table *pmt, unsigned char *
         case 0x380804: pm_table_0x380804(pmt, pm_buf); break; //Ryzen 5900X / 5950X
         case 0x380805: pm_table_0x380805(pmt, pm_buf); break; //Ryzen 5900X / 5950X
         case 0x400005: pm_table_0x400005(pmt, pm_buf); break; //Ryzen 5600G / 5700G
-        case 0x240903: pm_table_0x240903(pmt, pm_buf); break; //Ryzen 3700X / 3800X
+        case 0x240903: pm_table_0x240903(pmt, pm_buf); break; //Ryzen 3600/X, 3700X, 3800X/XT
         case 0x240803: pm_table_0x240803(pmt, pm_buf); break; //Ryzen 3950X
         case 0x370003: pm_table_0x370003(pmt, pm_buf); break; //Lucienne, Renoir
         case 0x370005: pm_table_0x370005(pmt, pm_buf); break; //Lucienne, Renoir
